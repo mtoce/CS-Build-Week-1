@@ -5,7 +5,7 @@ import numpy as np
 
 class GameOfLife:
 
-    def __init__(self, screen_width=800, screen_height=600, cell_size=10, alive_color=(0, 255, 255),
+    def __init__(self, screen_width=1000, screen_height=800, cell_size=30, alive_color=(0, 255, 255),
                  dead_color=(0, 0, 0), max_fps=10):
         """
         Initialize grid, set default game state, initialize screen
@@ -17,6 +17,11 @@ class GameOfLife:
         :param max_fps: Framerate cap to limit game speed
         """
         pygame.init()
+        # self.max_fps = float(input("Enter your desired FPS between generations (sugested 1-10) "))
+        # self.screen_width = int(float(input("Enter your desired Screen Width in pixels. ")))
+        # self.screen_height = int(float(input("Enter your desired Screen Height in pixels. ")))
+        # self.cell_size = int(float(input("Enter your desired cell size. ")))
+        self.max_fps = max_fps
         self.screen_width = screen_width
         self.screen_height = screen_height
         self.cell_size = cell_size
@@ -29,8 +34,7 @@ class GameOfLife:
 
         # FPS gen-to-gen (allow for user input?)
         # self.max_fps = max_fps
-        self.max_fps = float(input("Enter your desired FPS between generations (sugested 1-10) "))
-
+        
         self.active_grid = 0
         self.num_cols = int(self.screen_width / self.cell_size)
         self.num_rows = int(self.screen_height / self.cell_size)
@@ -40,6 +44,7 @@ class GameOfLife:
 
         self.paused = False
         self.game_over = False
+        self.generation_counter = 0
 
     def init_grids(self):
         """
@@ -79,12 +84,20 @@ class GameOfLife:
                     cell_value = value
                 self.grids[grid][r][c] = cell_value
 
+        pygame.display.update()
+    
+    def display_generation(self):
+        """
+        Displays the current generation at in a caption at the top of the window.
+        """
+        pygame.display.set_caption("Current Generation: %s" %(self.generation_counter)) 
+
     def draw_grid(self):
         """
         Given the grid and cell states, draw the cells on the screen
         :return:
         """
-        self.clear_screen()
+        #self.clear_screen()
         for c in range(self.num_cols):
             for r in range(self.num_rows):
                 if self.grids[self.active_grid][r][c] == 1:
@@ -97,39 +110,9 @@ class GameOfLife:
                                     int(r * self.cell_size + (self.cell_size / 2))),
                                    int(self.cell_size / 2),
                                    0)
+        self.display_generation()
         pygame.display.flip()
 
-    # def glider_gun(self):
-    #     glider_gun =[
-    #         [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],
-    #         [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0],
-    #         [0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1],
-    #         [0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1],
-    #         [1,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    #         [1,1,0,0,0,0,0,0,0,0,1,0,0,0,1,0,1,1,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0],
-    #         [0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],
-    #         [0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    #         [0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-    #         ]
-    #     self.screen_width = 700
-    #     self.screen_height = 500
-    #     self.cell_size = 10
-    #     self.init_grids()
-    #     padding_row = 10
-    #     padding_col = 10
-    #     row = 0
-    #     col = 0
-    #     for row in range(0, 9):
-    #         for col in range(0, 36):
-    #             # overwrite current cell state with those in glider_gun variable
-    #             print("CC: ", self.grids[self.active_grid][row + padding_row][col + padding_col])
-    #             print("GG: ", glider_gun[row][col])
-    #             self.grids[self.active_grid][row + padding_row][col + padding_col] = glider_gun[row][col]
-    #     # X = np.zeros((int(self.screen_width/self.cell_size), int(self.screen_height/self.cell_size)))
-    #     # X = np.array(X)
-    #     # X[1:10,1:37] = glider_gun
-    #     pygame.display.flip()
-        
     def clear_screen(self):
         """
         Fill whole screen with dead color
@@ -170,14 +153,14 @@ class GameOfLife:
         num_alive_neighbors += self.get_cell(row_index + 1, col_index + 1)
 
         # Rules for life and death
-        if self.grids[self.active_grid][row_index][col_index] == 1:  # alive
-            if num_alive_neighbors > 3:  # Overpopulation
+        if self.grids[self.active_grid][row_index][col_index] == 1:  # if alive
+            if num_alive_neighbors > 3:  # Overpopulation, dies
                 return 0
-            if num_alive_neighbors < 2:  # Underpopulation
+            if num_alive_neighbors < 2:  # Underpopulation, stays dead
                 return 0
-            if num_alive_neighbors == 2 or num_alive_neighbors == 3:
+            if num_alive_neighbors == 2 or num_alive_neighbors == 3:    # perfect population, come to life
                 return 1
-        elif self.grids[self.active_grid][row_index][col_index] == 0:  # dead
+        elif self.grids[self.active_grid][row_index][col_index] == 0:  # if dead
             if num_alive_neighbors == 3:
                 return 1  # come to life
 
@@ -218,6 +201,28 @@ class GameOfLife:
         :return:
         """
         for event in pygame.event.get():
+            if self.paused:
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if(event.button==1):
+                        mousepos_x, mousepos_y = event.pos
+                        c, r = (int((mousepos_x - self.cell_size / 2) // self.cell_size),
+                                int((mousepos_y - self.cell_size / 2) // self.cell_size))
+                        #print(event.pos, '->', (r, c))  # Show result.
+                        if r in range(self.num_rows) and c in range(self.num_cols):
+                            # Toggle state of cell: active <--> inactive
+                            if self.grids[self.active_grid][r][c] == 1:
+                                self.grids[self.active_grid][r][c] = 0
+                                color = self.dead_color
+                            else:
+                                self.grids[self.active_grid][r][c] = 1
+                                color = self.alive_color
+                            # Redraw cell in its new color.
+                            posn = (int(c * self.cell_size + self.cell_size / 2),
+                                    int(r * self.cell_size + self.cell_size / 2))
+                            #print('  posn:', posn)
+                            pygame.draw.circle(self.screen, color, posn, int(self.cell_size / 2), 0)
+
+                            pygame.display.flip()
             if event.type == pygame.KEYDOWN:
                 print("key pressed")
                 if event.unicode == 'p':        # toggle pause
@@ -241,6 +246,7 @@ class GameOfLife:
                 elif event.unicode == 'n':      # next generation
                     print("Stepping forward 1 generation.")
                     self.update_generation()
+                    self.generation_counter += 1
                     self.draw_grid()
                 elif event.unicode == 'j':      # jump forward x generations
                     skip_step = int(input("Enter # of gens to skip ahead. "))
@@ -274,7 +280,6 @@ class GameOfLife:
         """
 
         clock = pygame.time.Clock()
-
         while True:
             if self.game_over:
                 return
@@ -283,6 +288,7 @@ class GameOfLife:
 
             if not self.paused:
                 self.update_generation()
+                self.generation_counter += 1
                 self.draw_grid()
 
             clock.tick(self.max_fps)
